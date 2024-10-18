@@ -2,8 +2,9 @@
 
 #include "CataclysmWindow.hpp"
 #include "CataclysmDevice.hpp"
-#include "CObject.hpp"
+#include "CataclysmObject.hpp"
 #include "CataclysmRenderer.hpp"
+#include "CataclysmDescriptors.hpp"
 
 // std lib headers
 #include <memory>
@@ -11,7 +12,7 @@
 
 namespace Cataclysm
 {
-    class FirstApplication
+    class CataclysmApplication
     {
     public:
         static constexpr int WIDTH = 1188;
@@ -19,11 +20,11 @@ namespace Cataclysm
 
         void run();
 
-        FirstApplication();
-        ~FirstApplication();
+        CataclysmApplication();
+        ~CataclysmApplication();
 
-        FirstApplication(const FirstApplication &) = delete;
-        FirstApplication &operator=(const FirstApplication &) = delete;
+        CataclysmApplication(const CataclysmApplication &) = delete;
+        CataclysmApplication &operator=(const CataclysmApplication &) = delete;
 
     private:
         void loadGameObjects();
@@ -32,7 +33,9 @@ namespace Cataclysm
         CataclysmDevice cataclysmDevice{cataclysmWindow};
         CataclysmRenderer cataclysmRenderer{cataclysmWindow, cataclysmDevice};
 
-        std::vector<CObject> gameObjects;
+        // order of declaration matters
+        std::unique_ptr<CataclysmDescriptorPool> globalPool{};
+        std::vector<CataclysmObject> gameObjects;
     };
 
 } // namespace Cataclysm

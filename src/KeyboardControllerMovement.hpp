@@ -1,6 +1,6 @@
 #pragma once
 
-#include "CObject.hpp"
+#include "CataclysmObject.hpp"
 #include "CataclysmWindow.hpp"
 
 namespace Cataclysm
@@ -16,16 +16,16 @@ namespace Cataclysm
             int moveBackward = GLFW_KEY_S;
             int moveUp = GLFW_KEY_SPACE;
             int moveDown = GLFW_KEY_LEFT_SHIFT;
-            int lookLeft = GLFW_KEY_LEFT;
-            int lookRight = GLFW_KEY_RIGHT;
-            int lookUp = GLFW_KEY_UP;
-            int lookDown = GLFW_KEY_DOWN;
+            int escape = GLFW_KEY_ESCAPE;
+            int leftClick = GLFW_MOUSE_BUTTON_LEFT;
+            int cursor = GLFW_CURSOR;
+            bool mouseControl = false;
         };
 
-        void moveInPlaneXZ(GLFWwindow *window, CObject &object, float deltaTime);
+        void moveInPlaneXZ(GLFWwindow *window, CataclysmObject &object, float deltaTime);
 
         keyMappings keys{};
         float movementSpeed{3.0f};
-        float lookSpeed{1.5f};
+        float lookSpeed{100.0f};
     };
 } // namespace Cataclysm

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CataclysmDevice.hpp"
+#include "CataclysmBuffer.hpp"
 
 // std lib headers
 #include <memory>
@@ -25,6 +26,11 @@ namespace Cataclysm
 
             static std::vector<VkVertexInputBindingDescription> getBindingDescriptions();
             static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions();
+
+            bool operator==(const Vertex &other) const
+            {
+                return position == other.position && color == other.color && normal == other.normal && texCoord == other.texCoord;
+            }
         };
 
         struct Builder
@@ -52,13 +58,11 @@ namespace Cataclysm
 
         CataclysmDevice &cataclysmDevice;
 
-        VkBuffer vertexBuffer;
-        VkDeviceMemory vertexBufferMemory;
+        std::unique_ptr<CataclysmBuffer> vertexBuffer;
         uint32_t vertexCount;
 
         bool hasIndexBuffer = false;
-        VkBuffer indexBuffer;
-        VkDeviceMemory indexBufferMemory;
+        std::unique_ptr<CataclysmBuffer> indexBuffer;
         uint32_t indexCount;
     };
 } // namespace Cataclysm

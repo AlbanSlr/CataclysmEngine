@@ -2,30 +2,50 @@
 
 namespace Cataclysm
 {
-    void KeyboardControllerMovement::moveInPlaneXZ(GLFWwindow *window, CObject &object, float deltaTime)
+    void KeyboardControllerMovement::moveInPlaneXZ(GLFWwindow *window, CataclysmObject &object, float deltaTime)
     {
         glm::vec3 rotate{0};
-        if (glfwGetKey(window, keys.lookRight) == GLFW_PRESS)
+
+        if (glfwGetMouseButton(window, keys.leftClick) == GLFW_PRESS)
         {
-            rotate.y += 1.0f;
+            keys.mouseControl = true;
+            int width, height;
+            glfwGetWindowSize(window, &width, &height);
+            glfwSetCursorPos(window, width / 2, height / 2);
+            glfwSetInputMode(window, keys.cursor, GLFW_CURSOR_DISABLED);
         }
-        if (glfwGetKey(window, keys.lookLeft) == GLFW_PRESS)
+
+        if (glfwGetKey(window, keys.escape) == GLFW_PRESS)
         {
-            rotate.y -= 1.0f;
+            keys.mouseControl = false;
+            int width, height;
+            glfwGetWindowSize(window, &width, &height);
+            glfwSetCursorPos(window, width / 2, height / 2);
+            glfwSetInputMode(window, keys.cursor, GLFW_CURSOR_NORMAL);
         }
-        if (glfwGetKey(window, keys.lookUp) == GLFW_PRESS)
+
+        if (keys.mouseControl)
         {
-            rotate.x += 1.0f;
-        }
-        if (glfwGetKey(window, keys.lookDown) == GLFW_PRESS)
-        {
-            rotate.x -= 1.0f;
+            int width, height;
+            glfwGetWindowSize(window, &width, &height);
+
+            double mouseX, mouseY;
+            glfwGetCursorPos(window, &mouseX, &mouseY);
+
+            float rotX = -lookSpeed * (float)(mouseY - (height / 2)) / (float)height;
+            float rotY = lookSpeed * (float)(mouseX - (width / 2)) / (float)width;
+
+            rotate.x += rotX;
+            rotate.y += rotY;
+
+            glfwSetCursorPos(window, width / 2, height / 2);
         }
 
         if (glm::dot(rotate, rotate) > std::numeric_limits<float>::epsilon())
         {
             object.transform.rotation += movementSpeed * deltaTime * glm::normalize(rotate);
         }
+
         object.transform.rotation.x = glm::clamp(object.transform.rotation.x, -1.5f, 1.5f);
         object.transform.rotation.y = glm::mod(object.transform.rotation.y, glm::two_pi<float>());
 

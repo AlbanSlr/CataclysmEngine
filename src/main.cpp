@@ -3,11 +3,11 @@
 #include <iostream>
 #include <stdexcept>
 
-#include "FirstApplication.hpp"
+#include "CataclysmApplication.hpp"
 
 int main()
 {
-    Cataclysm::FirstApplication app;
+    Cataclysm::CataclysmApplication app;
 
     try
     {
