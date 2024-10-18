@@ -4,6 +4,12 @@
 #include <stdexcept>
 #include <array>
 
+#ifndef SHADER_DIR
+#error "SHADER_DIR not defined"
+#endif
+
+std::string SHADER_PATH = SHADER_DIR;
+
 namespace Cataclysm
 {
     struct SimplePushConstantData
@@ -54,7 +60,7 @@ namespace Cataclysm
         CataclysmPipeline::defaultPipelineConfigInfo(pipelineConfig);
         pipelineConfig.renderPass = renderPass;
         pipelineConfig.pipelineLayout = pipelineLayout;
-        cataclysmPipeline = std::make_unique<CataclysmPipeline>(cataclysmDevice, "./Documents/CataclysmEngine/CataclysmEngine/Source/Shaders/simple_shader.vert.spv", "./Documents/CataclysmEngine/CataclysmEngine/Source/Shaders/simple_shader.frag.spv", pipelineConfig);
+        cataclysmPipeline = std::make_unique<CataclysmPipeline>(cataclysmDevice, SHADER_PATH + "simple_shader.vert.spv", SHADER_PATH + "simple_shader.frag.spv", pipelineConfig);
     }
 
     void CataclysmRenderSystem::renderGameObjects(FrameInfo &frameInfo, std::vector<CataclysmObject> &gameObjects)

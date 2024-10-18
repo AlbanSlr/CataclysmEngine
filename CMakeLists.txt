@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.6...3.28 FATAL_ERROR)
 cmake_policy(VERSION 3.6)
 
+add_compile_definitions(MODEL_DIR="${CMAKE_CURRENT_SOURCE_DIR}/models/")
+add_compile_definitions(SHADER_DIR="${CMAKE_CURRENT_SOURCE_DIR}/shaders/")
+
 if(APPLE)
   include(./envMac.cmake OPTIONAL RESULT_VARIABLE LOCAL_ENV)
   message(STATUS "Using envMac.cmake : ${LOCAL_ENV}")

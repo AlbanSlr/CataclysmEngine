@@ -10,6 +10,12 @@
 #include <chrono>
 #include <iostream>
 
+#ifndef MODEL_DIR
+#error "MODEL_DIR not defined"
+#endif
+
+std::string MODEL_PATH = MODEL_DIR;
+
 namespace Cataclysm
 {
     struct GlobalUbo
@@ -94,7 +100,7 @@ namespace Cataclysm
 
     void CataclysmApplication::loadGameObjects()
     {
-        std::shared_ptr<CataclysmModel> cubeModel = CataclysmModel::createModelFromFile(cataclysmDevice, "./Documents/CataclysmEngine/Models/smooth_vase.obj");
+        std::shared_ptr<CataclysmModel> cubeModel = CataclysmModel::createModelFromFile(cataclysmDevice, MODEL_PATH + "smooth_vase.obj");
         CataclysmObject gameObj = CataclysmObject::createCataclysmObject();
         gameObj.model = cubeModel;
         gameObj.transform.translation = {0.0f, 0.0f, 2.0f};
