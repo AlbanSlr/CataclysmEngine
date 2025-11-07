@@ -12,40 +12,45 @@ namespace Cataclysm
 
     void CataclysmWindow::initWindow()
     {
-        glfwInit();
+        if (!SDL_Init(SDL_INIT_VIDEO))
+        {
+            throw std::runtime_error("failed to initialize SDL3!");
+        }
 
-        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+        window = SDL_CreateWindow(WINDOW_NAME.c_str(), width, height, SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE);
 
-        window = glfwCreateWindow(width, height, WINDOW_NAME.c_str(), nullptr, nullptr);
-        glfwSetWindowUserPointer(window, this);
-        glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
+        if (!window)
+        {
+            throw std::runtime_error("failed to create SDL3 window!");
+        }
+
+        // Store pointer to this instance using SDL3 properties
+        SDL_SetPointerProperty(SDL_GetWindowProperties(window), "CataclysmWindow", this);
     }
 
     CataclysmWindow::~CataclysmWindow()
     {
-        glfwDestroyWindow(window);
-        glfwTerminate();
-    }
-
-    bool CataclysmWindow::shouldClose()
-    {
-        return glfwWindowShouldClose(window);
+        SDL_DestroyWindow(window);
+        SDL_Quit();
     }
 
     void CataclysmWindow::createWindowSurface(VkInstance instance, VkSurfaceKHR *surface)
     {
-        if (glfwCreateWindowSurface(instance, window, nullptr, surface) != VK_SUCCESS)
+        if (!SDL_Vulkan_CreateSurface(window, instance, nullptr, surface))
         {
-            throw std::runtime_error("Failed to create window surface!");
+            throw std::runtime_error("failed to create window surface!");
         }
     }
 
-    void CataclysmWindow::framebufferResizeCallback(GLFWwindow *window, int width, int height)
+    void CataclysmWindow::framebufferResizeCallback(SDL_Window *window, int width, int height)
     {
-        auto cataclysmWindow = reinterpret_cast<CataclysmWindow *>(glfwGetWindowUserPointer(window));
-        cataclysmWindow->framebufferResized = true;
-        cataclysmWindow->width = width;
-        cataclysmWindow->height = height;
+        auto cataclysmWindow = reinterpret_cast<CataclysmWindow *>(
+            SDL_GetPointerProperty(SDL_GetWindowProperties(window), "CataclysmWindow", nullptr));
+        if (cataclysmWindow)
+        {
+            cataclysmWindow->framebufferResized = true;
+            cataclysmWindow->width = width;
+            cataclysmWindow->height = height;
+        }
     }
 } // namespace Cataclysm

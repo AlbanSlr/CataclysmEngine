@@ -10,22 +10,21 @@ namespace Cataclysm
     public:
         struct keyMappings
         {
-            int moveLeft = GLFW_KEY_A;
-            int moveRight = GLFW_KEY_D;
-            int moveForward = GLFW_KEY_W;
-            int moveBackward = GLFW_KEY_S;
-            int moveUp = GLFW_KEY_SPACE;
-            int moveDown = GLFW_KEY_LEFT_SHIFT;
-            int escape = GLFW_KEY_ESCAPE;
-            int leftClick = GLFW_MOUSE_BUTTON_LEFT;
-            int cursor = GLFW_CURSOR;
+            SDL_Scancode moveLeft = SDL_SCANCODE_A;
+            SDL_Scancode moveRight = SDL_SCANCODE_D;
+            SDL_Scancode moveForward = SDL_SCANCODE_W;
+            SDL_Scancode moveBackward = SDL_SCANCODE_S;
+            SDL_Scancode moveUp = SDL_SCANCODE_SPACE;
+            SDL_Scancode moveDown = SDL_SCANCODE_LSHIFT;
+            SDL_Scancode escape = SDL_SCANCODE_ESCAPE;
+            Uint8 leftClick = SDL_BUTTON_LEFT;
             bool mouseControl = false;
         };
 
-        void moveInPlaneXZ(GLFWwindow *window, CataclysmObject &object, float deltaTime);
+        void moveInPlaneXZ(SDL_Window *window, CataclysmObject &object, float deltaTime);
 
         keyMappings keys{};
         float movementSpeed{3.0f};
-        float lookSpeed{100.0f};
+        float lookSpeed{1.0f};
     };
 } // namespace Cataclysm

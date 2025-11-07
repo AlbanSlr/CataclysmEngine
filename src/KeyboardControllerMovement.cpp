@@ -2,43 +2,55 @@
 
 namespace Cataclysm
 {
-    void KeyboardControllerMovement::moveInPlaneXZ(GLFWwindow *window, CataclysmObject &object, float deltaTime)
+    void KeyboardControllerMovement::moveInPlaneXZ(SDL_Window *window, CataclysmObject &object, float deltaTime)
     {
         glm::vec3 rotate{0};
 
-        if (glfwGetMouseButton(window, keys.leftClick) == GLFW_PRESS)
+        // Get mouse button state
+        Uint32 mouseState = SDL_GetMouseState(nullptr, nullptr);
+
+        if (mouseState & SDL_BUTTON_LMASK)
         {
-            keys.mouseControl = true;
-            int width, height;
-            glfwGetWindowSize(window, &width, &height);
-            glfwSetCursorPos(window, width / 2, height / 2);
-            glfwSetInputMode(window, keys.cursor, GLFW_CURSOR_DISABLED);
+            if (!keys.mouseControl)
+            {
+                keys.mouseControl = true;
+                int width, height;
+                SDL_GetWindowSize(window, &width, &height);
+                SDL_WarpMouseInWindow(window, width / 2.0f, height / 2.0f);
+                SDL_SetWindowRelativeMouseMode(window, true);
+            }
         }
 
-        if (glfwGetKey(window, keys.escape) == GLFW_PRESS)
+        // Get keyboard state
+        const bool *keyboardState = SDL_GetKeyboardState(nullptr);
+
+        if (keyboardState[keys.escape])
         {
-            keys.mouseControl = false;
-            int width, height;
-            glfwGetWindowSize(window, &width, &height);
-            glfwSetCursorPos(window, width / 2, height / 2);
-            glfwSetInputMode(window, keys.cursor, GLFW_CURSOR_NORMAL);
+            if (keys.mouseControl)
+            {
+                keys.mouseControl = false;
+                SDL_SetWindowRelativeMouseMode(window, false);
+            }
         }
 
         if (keys.mouseControl)
         {
             int width, height;
-            glfwGetWindowSize(window, &width, &height);
+            SDL_GetWindowSize(window, &width, &height);
 
-            double mouseX, mouseY;
-            glfwGetCursorPos(window, &mouseX, &mouseY);
+            float mouseX, mouseY;
+            SDL_GetMouseState(&mouseX, &mouseY);
 
-            float rotX = -lookSpeed * (float)(mouseY - (height / 2)) / (float)height;
-            float rotY = lookSpeed * (float)(mouseX - (width / 2)) / (float)width;
+            float rotX = -lookSpeed * (mouseY - (height / 2.0f)) / (float)height;
+            float rotY = lookSpeed * (mouseX - (width / 2.0f)) / (float)width;
+
+            constexpr float maxRotX = glm::radians(89.0f);
+            rotX = glm::clamp(rotX, -maxRotX, maxRotX);
 
             rotate.x += rotX;
             rotate.y += rotY;
 
-            glfwSetCursorPos(window, width / 2, height / 2);
+            SDL_WarpMouseInWindow(window, width / 2.0f, height / 2.0f);
         }
 
         if (glm::dot(rotate, rotate) > std::numeric_limits<float>::epsilon())
@@ -56,27 +68,27 @@ namespace Cataclysm
 
         glm::vec3 moveDir{0.0f};
 
-        if (glfwGetKey(window, keys.moveForward) == GLFW_PRESS)
+        if (keyboardState[keys.moveForward])
         {
             moveDir += forwardDir;
         }
-        if (glfwGetKey(window, keys.moveBackward) == GLFW_PRESS)
+        if (keyboardState[keys.moveBackward])
         {
             moveDir -= forwardDir;
         }
-        if (glfwGetKey(window, keys.moveRight) == GLFW_PRESS)
+        if (keyboardState[keys.moveRight])
         {
             moveDir += rightDir;
         }
-        if (glfwGetKey(window, keys.moveLeft) == GLFW_PRESS)
+        if (keyboardState[keys.moveLeft])
         {
             moveDir -= rightDir;
         }
-        if (glfwGetKey(window, keys.moveUp) == GLFW_PRESS)
+        if (keyboardState[keys.moveUp])
         {
             moveDir += upDir;
         }
-        if (glfwGetKey(window, keys.moveDown) == GLFW_PRESS)
+        if (keyboardState[keys.moveDown])
         {
             moveDir -= upDir;
         }

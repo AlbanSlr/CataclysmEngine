@@ -44,7 +44,6 @@ namespace Cataclysm
         while (extent.width == 0 || extent.height == 0)
         {
             extent = cataclysmWindow.getExtent();
-            glfwWaitEvents();
         }
 
         vkDeviceWaitIdle(cataclysmDevice.device());
@@ -60,7 +59,7 @@ namespace Cataclysm
 
             if (!oldSwapChain->compareSwapChainFormats(*cataclysmSwapChain))
             {
-                throw std::runtime_error("Swap chain image (or depth) format has changed.");
+                throw std::runtime_error("swap chain image (or depth) format has changed!");
             }
         }
     }

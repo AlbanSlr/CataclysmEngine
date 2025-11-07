@@ -4,6 +4,7 @@
 #include <iostream>
 #include <set>
 #include <unordered_set>
+#include <stdexcept>
 
 namespace Cataclysm
 {
@@ -122,7 +123,7 @@ namespace Cataclysm
       throw std::runtime_error("failed to create instance.");
     }
 
-    hasGflwRequiredInstanceExtensions();
+    hasSdlRequiredInstanceExtensions();
   }
 
   void CataclysmDevice::pickPhysicalDevice()
@@ -303,11 +304,15 @@ namespace Cataclysm
 
   std::vector<const char *> CataclysmDevice::getRequiredExtensions()
   {
-    uint32_t glfwExtensionCount = 0;
-    const char **glfwExtensions;
-    glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+    // get required extensions for SDL
+    uint32_t sdlExtensionCount = 0;
+    const char *const *sdlExtensions = SDL_Vulkan_GetInstanceExtensions(&sdlExtensionCount);
+    if (!sdlExtensions)
+    {
+      throw std::runtime_error("failed to fetch required extensions!");
+    }
 
-    std::vector<const char *> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+    std::vector<const char *> extensions(sdlExtensions, sdlExtensions + sdlExtensionCount);
 
     if (enableValidationLayers)
     {
@@ -318,7 +323,7 @@ namespace Cataclysm
     return extensions;
   }
 
-  void CataclysmDevice::hasGflwRequiredInstanceExtensions()
+  void CataclysmDevice::hasSdlRequiredInstanceExtensions()
   {
     uint32_t extensionCount = 0;
     vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
@@ -340,7 +345,7 @@ namespace Cataclysm
       std::cout << "\t" << required << std::endl;
       if (available.find(required) == available.end())
       {
-        throw std::runtime_error("Missing required glfw extension");
+        throw std::runtime_error("missing required SDL3 extension!");
       }
     }
   }

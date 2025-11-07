@@ -64,14 +64,33 @@ namespace Cataclysm
 
         auto currentTime = std::chrono::high_resolution_clock::now();
 
-        while (!cataclysmWindow.shouldClose())
+        bool running = true;
+        SDL_Event event;
+
+        while (running)
         {
-            glfwPollEvents();
+
+            // Handle events
+            while (SDL_PollEvent(&event))
+            {
+                switch (event.type)
+                {
+                case SDL_EVENT_QUIT:
+                    running = false;
+                    break;
+                case SDL_EVENT_WINDOW_RESIZED:
+                case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
+                    // Handle window resize - the renderer will recreate swap chain automatically
+                    cataclysmWindow.framebufferResized = true;
+                    break;
+                }
+            }
+
             auto newTime = std::chrono::high_resolution_clock::now();
             float frameTime = std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).count();
             currentTime = newTime;
 
-            cameraController.moveInPlaneXZ(cataclysmWindow.getGLFWWindow(), viewerObject, frameTime);
+            cameraController.moveInPlaneXZ(cataclysmWindow.getSDLWindow(), viewerObject, frameTime);
             camera.setViewYXZ(viewerObject.transform.translation, viewerObject.transform.rotation);
 
             float aspect = cataclysmRenderer.getAspectRatio();

@@ -67,8 +67,8 @@ namespace Cataclysm
     // cleanup synchronization objects
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
     {
-      vkDestroySemaphore(device.device(), renderFinishedSemaphores[i], nullptr);
       vkDestroySemaphore(device.device(), imageAvailableSemaphores[i], nullptr);
+      vkDestroySemaphore(device.device(), renderFinishedSemaphores[i], nullptr);
       vkDestroyFence(device.device(), inFlightFences[i], nullptr);
     }
   }
@@ -86,7 +86,7 @@ namespace Cataclysm
         device.device(),
         swapChain,
         std::numeric_limits<uint64_t>::max(),
-        imageAvailableSemaphores[currentFrame], // must be a not signaled semaphore
+        imageAvailableSemaphores[currentFrame],
         VK_NULL_HANDLE,
         imageIndex);
 
@@ -380,6 +380,8 @@ namespace Cataclysm
 
   void CataclysmSwapChain::createSyncObjects()
   {
+    // Each frame in flight needs its own set of semaphores
+    // This avoids semaphore reuse issues
     imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
     renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
     inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
@@ -392,6 +394,7 @@ namespace Cataclysm
     fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
     fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
+    // Create semaphores and fences for each frame in flight
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
     {
       if (vkCreateSemaphore(device.device(), &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) !=
