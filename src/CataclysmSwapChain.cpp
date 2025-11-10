@@ -64,11 +64,15 @@ namespace Cataclysm
 
     vkDestroyRenderPass(device.device(), renderPass, nullptr);
 
-    // cleanup synchronization objects
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+    // Destroy per-swapchain-image semaphores
+    for (size_t i = 0; i < imageAvailableSemaphores.size(); i++)
     {
       vkDestroySemaphore(device.device(), imageAvailableSemaphores[i], nullptr);
       vkDestroySemaphore(device.device(), renderFinishedSemaphores[i], nullptr);
+    }
+    // Destroy per-frame-in-flight fences
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+    {
       vkDestroyFence(device.device(), inFlightFences[i], nullptr);
     }
   }
@@ -82,13 +86,21 @@ namespace Cataclysm
         VK_TRUE,
         std::numeric_limits<uint64_t>::max());
 
+    // First acquire the image to get the index
     VkResult result = vkAcquireNextImageKHR(
         device.device(),
         swapChain,
         std::numeric_limits<uint64_t>::max(),
-        imageAvailableSemaphores[currentFrame],
+        imageAvailableSemaphores[currentFrame], // Temporary: use currentFrame semaphore for acquisition
         VK_NULL_HANDLE,
         imageIndex);
+
+    // Wait for any previous frame using this image
+    if (imagesInFlight[*imageIndex] != VK_NULL_HANDLE)
+    {
+      vkWaitForFences(device.device(), 1, &imagesInFlight[*imageIndex], VK_TRUE, UINT64_MAX);
+    }
+    imagesInFlight[*imageIndex] = inFlightFences[currentFrame];
 
     return result;
   }
@@ -96,15 +108,13 @@ namespace Cataclysm
   VkResult CataclysmSwapChain::submitCommandBuffers(
       const VkCommandBuffer *buffers, uint32_t *imageIndex)
   {
-    if (imagesInFlight[*imageIndex] != VK_NULL_HANDLE)
-    {
-      vkWaitForFences(device.device(), 1, &imagesInFlight[*imageIndex], VK_TRUE, UINT64_MAX);
-    }
-    imagesInFlight[*imageIndex] = inFlightFences[currentFrame];
+
+    vkResetFences(device.device(), 1, &inFlightFences[currentFrame]);
 
     VkSubmitInfo submitInfo = {};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
+    // Wait on the semaphore from acquireNextImage
     VkSemaphore waitSemaphores[] = {imageAvailableSemaphores[currentFrame]};
     VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
     submitInfo.waitSemaphoreCount = 1;
@@ -114,11 +124,12 @@ namespace Cataclysm
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = buffers;
 
-    VkSemaphore signalSemaphores[] = {renderFinishedSemaphores[currentFrame]};
+    // Signal the per-image semaphore - this is the key fix!
+    // Use the acquired image index to select the correct semaphore
+    VkSemaphore signalSemaphores[] = {renderFinishedSemaphores[*imageIndex]};
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = signalSemaphores;
 
-    vkResetFences(device.device(), 1, &inFlightFences[currentFrame]);
     if (vkQueueSubmit(device.graphicsQueue(), 1, &submitInfo, inFlightFences[currentFrame]) !=
         VK_SUCCESS)
     {
@@ -380,10 +391,12 @@ namespace Cataclysm
 
   void CataclysmSwapChain::createSyncObjects()
   {
-    // Each frame in flight needs its own set of semaphores
-    // This avoids semaphore reuse issues
-    imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-    renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+    // Create semaphores per swapchain image to avoid reuse issues
+    // This prevents semaphores from being signaled while still in use by the swapchain
+    imageAvailableSemaphores.resize(imageCount());
+    renderFinishedSemaphores.resize(imageCount());
+
+    // Fences are still per frame in flight
     inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
     imagesInFlight.resize(imageCount(), VK_NULL_HANDLE);
 
@@ -394,14 +407,22 @@ namespace Cataclysm
     fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
     fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-    // Create semaphores and fences for each frame in flight
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+    // Create semaphores for each swapchain image
+    for (size_t i = 0; i < imageCount(); i++)
     {
       if (vkCreateSemaphore(device.device(), &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) !=
               VK_SUCCESS ||
           vkCreateSemaphore(device.device(), &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) !=
-              VK_SUCCESS ||
-          vkCreateFence(device.device(), &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS)
+              VK_SUCCESS)
+      {
+        throw std::runtime_error("failed to create synchronization semaphores for swapchain image!");
+      }
+    }
+
+    // Create fences for each frame in flight
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+    {
+      if (vkCreateFence(device.device(), &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS)
       {
         throw std::runtime_error("failed to create synchronization objects for a frame!");
       }

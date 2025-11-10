@@ -22,6 +22,7 @@ namespace Cataclysm
 
         VkRenderPass getSwapChainRenderPass() const { return cataclysmSwapChain->getRenderPass(); }
         float getAspectRatio() const { return cataclysmSwapChain->extentAspectRatio(); }
+        CataclysmSwapChain *getSwapChain() const { return cataclysmSwapChain.get(); }
 
         bool isFrameInProgress() const { return isFrameStarted; }
         VkCommandBuffer getCurrentCommandBuffer() const

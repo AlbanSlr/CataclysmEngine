@@ -15,7 +15,7 @@ namespace Cataclysm
   class CataclysmSwapChain
   {
   public:
-    static constexpr int MAX_FRAMES_IN_FLIGHT = 3;
+    static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
 
     CataclysmSwapChain(CataclysmDevice &deviceRef, VkExtent2D windowExtent);
     CataclysmSwapChain(CataclysmDevice &deviceRef, VkExtent2D windowExtent, std::shared_ptr<CataclysmSwapChain> previous);
@@ -82,12 +82,13 @@ namespace Cataclysm
     VkSwapchainKHR swapChain;
     std::shared_ptr<CataclysmSwapChain> oldSwapChain;
 
+    // Per-swapchain-image semaphores
     std::vector<VkSemaphore> imageAvailableSemaphores;
     std::vector<VkSemaphore> renderFinishedSemaphores;
+    // Per-frame-in-flight fences
     std::vector<VkFence> inFlightFences;
     std::vector<VkFence> imagesInFlight;
     size_t currentFrame = 0;
-    uint32_t currentImageIndex = 0; // Track the current image index
   };
 
 } // namespace Cataclysm

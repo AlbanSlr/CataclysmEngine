@@ -5,6 +5,7 @@
 #include "CataclysmObject.hpp"
 #include "CataclysmRenderer.hpp"
 #include "CataclysmDescriptors.hpp"
+#include "CataclysmUI.hpp"
 
 // std lib headers
 #include <memory>
@@ -32,6 +33,10 @@ namespace Cataclysm
         CataclysmWindow cataclysmWindow{WIDTH, HEIGHT, "Cataclysm Preview Window"};
         CataclysmDevice cataclysmDevice{cataclysmWindow};
         CataclysmRenderer cataclysmRenderer{cataclysmWindow, cataclysmDevice};
+
+        // ImGUI
+        std::unique_ptr<CataclysmDescriptorPool> imguiPool{};
+        std::unique_ptr<CataclysmUI> cataclysmUI;
 
         // order of declaration matters
         std::unique_ptr<CataclysmDescriptorPool> globalPool{};

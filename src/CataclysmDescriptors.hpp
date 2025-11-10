@@ -81,6 +81,8 @@ namespace Cataclysm
 
         void resetPool();
 
+        VkDescriptorPool getDescriptorPool() const { return descriptorPool; }
+
     private:
         CataclysmDevice &cataclysmDevice;
         VkDescriptorPool descriptorPool;

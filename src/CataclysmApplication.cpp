@@ -4,6 +4,11 @@
 #include "KeyboardControllerMovement.hpp"
 #include "CataclysmBuffer.hpp"
 
+// ImGui
+#include <imgui.h>
+#include <imgui_impl_sdl3.h>
+#include <imgui_impl_vulkan.h>
+
 // std lib headers
 #include <stdexcept>
 #include <array>
@@ -28,10 +33,59 @@ namespace Cataclysm
     {
         globalPool = CataclysmDescriptorPool::Builder(cataclysmDevice).setMaxSets(CataclysmSwapChain::MAX_FRAMES_IN_FLIGHT).addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, CataclysmSwapChain::MAX_FRAMES_IN_FLIGHT).build();
         loadGameObjects();
+
+        // creating a descriptor pool for ImGui
+        imguiPool = CataclysmDescriptorPool::Builder(cataclysmDevice)
+                        .setMaxSets(1000)
+                        .setPoolFlags(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT)
+                        .addPoolSize(VK_DESCRIPTOR_TYPE_SAMPLER, 1000)
+                        .addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000)
+                        .addPoolSize(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000)
+                        .addPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000)
+                        .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000)
+                        .addPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000)
+                        .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000)
+                        .addPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000)
+                        .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000)
+                        .addPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000)
+                        .addPoolSize(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000)
+                        .build();
+
+        // getting the vulkan initialization info for ImGui
+        auto queueFamily = cataclysmDevice.findPhysicalQueueFamilies();
+
+        ImGui_ImplVulkan_InitInfo init_info = {};
+        init_info.Instance = cataclysmDevice.getInstance();
+        init_info.PhysicalDevice = cataclysmDevice.getPhysicalDevice();
+        init_info.Device = cataclysmDevice.device();
+        init_info.QueueFamily = queueFamily.graphicsFamily;
+        init_info.Queue = cataclysmDevice.graphicsQueue();
+        init_info.PipelineCache = VK_NULL_HANDLE;
+        init_info.DescriptorPool = imguiPool->getDescriptorPool();
+        init_info.RenderPass = cataclysmRenderer.getSwapChainRenderPass();
+        init_info.Subpass = 0;
+        init_info.MinImageCount = 2;
+        init_info.ImageCount = static_cast<uint32_t>(cataclysmRenderer.getSwapChain()->imageCount());
+        init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+        init_info.Allocator = nullptr;
+        init_info.CheckVkResultFn = [](VkResult err)
+        {
+            if (err == VK_SUCCESS)
+                return;
+            std::cerr << "[vulkan] Error: VkResult = " << err << std::endl;
+            if (err < 0)
+                throw std::runtime_error("Vulkan error in ImGui");
+        };
+
+        // creating the UI
+        cataclysmUI = std::make_unique<CataclysmUI>(cataclysmWindow.getSDLWindow(), init_info);
     }
 
     CataclysmApplication::~CataclysmApplication()
     {
+        // Destroy ImGui resources before destroying Vulkan device
+        cataclysmUI.reset();
+        imguiPool.reset();
     }
 
     void CataclysmApplication::run()
@@ -73,6 +127,9 @@ namespace Cataclysm
             // Handle events
             while (SDL_PollEvent(&event))
             {
+                // Pass events to ImGui
+                ImGui_ImplSDL3_ProcessEvent(&event);
+
                 switch (event.type)
                 {
                 case SDL_EVENT_QUIT:
@@ -100,6 +157,26 @@ namespace Cataclysm
             {
                 int frameIndex = cataclysmRenderer.getFrameIndex();
                 FrameInfo frameInfo{frameIndex, frameTime, commandBuffer, camera, globalDescriptorSets[frameIndex]};
+
+                // Start ImGui frame
+                ImGui_ImplVulkan_NewFrame();
+                ImGui_ImplSDL3_NewFrame();
+                ImGui::NewFrame();
+
+                // ImGui UI - Example debug window
+                ImGui::Begin("Debug Info");
+                ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
+                            1000.0f / ImGui::GetIO().Framerate,
+                            ImGui::GetIO().Framerate);
+                ImGui::Text("Camera Position: (%.2f, %.2f, %.2f)",
+                            viewerObject.transform.translation.x,
+                            viewerObject.transform.translation.y,
+                            viewerObject.transform.translation.z);
+                ImGui::End();
+
+                // Render ImGui
+                ImGui::Render();
+
                 // update
                 GlobalUbo ubo{};
                 ubo.projectionView = camera.getProjection() * camera.getView();
@@ -109,6 +186,10 @@ namespace Cataclysm
                 // render
                 cataclysmRenderer.beginSwapChainRenderPass(commandBuffer);
                 renderSystem.renderGameObjects(frameInfo, gameObjects);
+
+                // Draw ImGui
+                ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
+
                 cataclysmRenderer.endSwapChainRenderPass(commandBuffer);
                 cataclysmRenderer.endFrame();
             }
